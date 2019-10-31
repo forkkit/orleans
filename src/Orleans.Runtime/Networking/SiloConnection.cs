@@ -45,6 +45,8 @@ namespace Orleans.Runtime.Messaging
 
         protected override IMessageCenter MessageCenter => this.messageCenter;
 
+        public NetworkProtocolVersion RemoteProtocolVersion { get; private set; }
+
         protected override void OnReceivedMessage(Message msg)
         {
             // See it's a Ping message, and if so, short-circuit it
@@ -60,7 +62,7 @@ namespace Orleans.Runtime.Messaging
             // Don't process messages that have already timed out
             if (msg.IsExpired)
             {
-                msg.DropExpiredMessage(MessagingStatisticsGroup.Phase.Receive);
+                msg.DropExpiredMessage(this.Log, MessagingStatisticsGroup.Phase.Receive);
                 return;
             }
 
@@ -244,11 +246,13 @@ namespace Orleans.Runtime.Messaging
                     throw new InvalidOperationException("Unexpected non-proxied connection on silo endpoint.");
                 }
 
-                if (siloAddress != null)
+                if (siloAddress is object)
                 {
                     this.RemoteSiloAddress = siloAddress;
                     this.connectionManager.OnConnected(siloAddress, this);
                 }
+
+                this.RemoteProtocolVersion = protocolVersion;
 
                 return protocolVersion;
             }
@@ -259,7 +263,7 @@ namespace Orleans.Runtime.Messaging
             // Don't send messages that have already timed out
             if (msg.IsExpired)
             {
-                msg.DropExpiredMessage(MessagingStatisticsGroup.Phase.Send);
+                msg.DropExpiredMessage(this.Log,  MessagingStatisticsGroup.Phase.Send);
                 if (msg.IsPing())
                 {
                     this.Log.LogWarning("Droppping expired ping message {Message}", msg);
@@ -272,12 +276,12 @@ namespace Orleans.Runtime.Messaging
             if (msg.SendingSilo == null)
                 msg.SendingSilo = this.LocalSiloAddress;
 
-            if (msg.IsPing())
+            if (this.Log.IsEnabled(LogLevel.Debug) && msg.IsPing())
             {
-                this.Log.LogInformation("Sending ping message {Message}", msg);
+                this.Log.LogDebug("Sending ping message {Message}", msg);
             }
 
-            if (this.RemoteSiloAddress is object && msg.TargetSilo is object && !this.RemoteSiloAddress.Equals(msg.TargetSilo))
+            if (this.RemoteSiloAddress is object && msg.TargetSilo is object && !this.RemoteSiloAddress.Matches(msg.TargetSilo))
             {
                 this.Log.LogWarning(
                     "Attempting to send message addressed to {TargetSilo} to connection with {RemoteSiloAddress}. Message {Message}",
@@ -308,6 +312,19 @@ namespace Orleans.Runtime.Messaging
             {
                 this.Log.Info(ErrorCode.Messaging_OutgoingMS_DroppingMessage, "Silo {SiloAddress} is dropping message: {Message}. Reason = {Reason}", this.LocalSiloAddress, msg, reason);
                 MessagingStatisticsGroup.OnDroppedSentMessage(msg);
+            }
+        }
+
+        public override void Send(Message message)
+        {
+            if (this.RemoteProtocolVersion == NetworkProtocolVersion.Version1 && this.RemoteSiloAddress is null)
+            {
+                // Incoming Version1 connections are half-duplex (read-only)
+                this.messageCenter.SendMessage(message);
+            }
+            else
+            {
+                base.Send(message);
             }
         }
 

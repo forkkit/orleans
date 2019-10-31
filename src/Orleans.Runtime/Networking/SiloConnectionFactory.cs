@@ -10,9 +10,11 @@ namespace Orleans.Runtime.Messaging
 {
     internal sealed class SiloConnectionFactory : ConnectionFactory
     {
+        internal static readonly object ServicesKey = new object();
         private readonly INetworkingTrace trace;
         private readonly ILocalSiloDetails localSiloDetails;
         private readonly IServiceProvider serviceProvider;
+        private readonly SiloConnectionOptions siloConnectionOptions;
         private readonly MessageFactory messageFactory;
         private readonly object initializationLock = new object();
         private bool isInitialized;
@@ -23,13 +25,14 @@ namespace Orleans.Runtime.Messaging
         public SiloConnectionFactory(
             IServiceProvider serviceProvider,
             IOptions<ConnectionOptions> connectionOptions,
-            IConnectionFactory connectionFactory,
+            IOptions<SiloConnectionOptions> siloConnectionOptions,
             MessageFactory messageFactory,
             INetworkingTrace trace,
             ILocalSiloDetails localSiloDetails)
-            : base(connectionFactory, serviceProvider, connectionOptions)
+            : base(serviceProvider.GetRequiredServiceByKey<object, IConnectionFactory>(ServicesKey), serviceProvider, connectionOptions)
         {
             this.serviceProvider = serviceProvider;
+            this.siloConnectionOptions = siloConnectionOptions.Value;
             this.messageFactory = messageFactory;
             this.trace = trace;
             this.localSiloDetails = localSiloDetails;
@@ -62,6 +65,13 @@ namespace Orleans.Runtime.Messaging
                 this.localSiloDetails,
                 this.connectionManager,
                 this.ConnectionOptions);
+        }
+
+        protected override void ConfigureConnectionBuilder(IConnectionBuilder connectionBuilder)
+        {
+            var configureDelegate = (SiloConnectionOptions.ISiloConnectionBuilderOptions)this.siloConnectionOptions;
+            configureDelegate.ConfigureSiloOutboundBuilder(connectionBuilder);
+            base.ConfigureConnectionBuilder(connectionBuilder);
         }
 
         private void EnsureInitialized()

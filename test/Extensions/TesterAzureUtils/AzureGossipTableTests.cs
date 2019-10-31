@@ -1,4 +1,5 @@
 using System;
+using System.Configuration;
 using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
@@ -13,7 +14,7 @@ using Xunit;
 
 namespace Tester.AzureUtils
 {
-    public class AzureGossipTableTests : AzureStorageBasicTests , IDisposable
+    public class AzureGossipTableTests : AzureStorageBasicTests, IDisposable
     {
         private readonly ILogger logger;
 
@@ -69,9 +70,9 @@ namespace Tester.AzureUtils
             var answer = await this.gossipTable.Synchronize(new MultiClusterData());
             Assert.True(answer.IsEmpty);
 
-            var ts1 = new DateTime(year: 2011, month: 1, day: 1);
-            var ts2 = new DateTime(year: 2012, month: 2, day: 2);
-            var ts3 = new DateTime(year: 2013, month: 3, day: 3);
+            var ts1 = new DateTime(year: 2011, month: 1, day: 1, hour: 0, minute: 0, second: 0, kind: DateTimeKind.Utc);
+            var ts2 = new DateTime(year: 2012, month: 2, day: 2, hour: 0, minute: 0, second: 0, kind: DateTimeKind.Utc);
+            var ts3 = new DateTime(year: 2013, month: 3, day: 3, hour: 0, minute: 0, second: 0, kind: DateTimeKind.Utc);
 
             var conf1 = new MultiClusterConfiguration(ts1, new string[] { "A" }.ToList(), "comment");
             var conf2 = new MultiClusterConfiguration(ts2, new string[] { "A", "B", "C" }.ToList());
@@ -151,7 +152,7 @@ namespace Tester.AzureUtils
             // push G1
             await this.gossipTable.Publish(new MultiClusterData(G1));
 
-            // push H1, retrieve G1 
+            // push H1, retrieve G1
             var answer = await this.gossipTable.Synchronize(new MultiClusterData(H1));
             Assert.Equal(1, answer.Gateways.Count);
             Assert.True(answer.Gateways.ContainsKey(this.siloAddress1));
@@ -173,7 +174,7 @@ namespace Tester.AzureUtils
             answer = await this.gossipTable.Synchronize(new MultiClusterData(new GatewayEntry[] { H1, G2 }));
             Assert.True(answer.IsEmpty);
 
-            // push H2 
+            // push H2
             await this.gossipTable.Publish(new MultiClusterData(H2));
 
             // retrieve all
@@ -184,6 +185,6 @@ namespace Tester.AzureUtils
             Assert.Equal(G2, answer.Gateways[this.siloAddress1]);
             Assert.Equal(H2, answer.Gateways[this.siloAddress2]);
         }
-         
+
     }
 }

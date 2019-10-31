@@ -7,6 +7,103 @@ All notable end-user facing changes are documented in this file.
 *Here are all the changes in `master` branch, and will be moved to the appropriate release once they are included in a published nuget package.
 The idea is to track end-user facing changes as they occur.*
 
+### [3.0.0] (changes since 3.0.0-rc2)
+
+- Non-breaking improvements
+  - Added consistent logging for all messages dropped due to expiry (#6053)
+  - Implement CleanupDefunctSiloEntries for Consul membership provider (#6056)
+  - Add remark about SQL scripts to client/silo builder documentation (#6062)
+
+### [3.0.0-rc2] (changes since 3.0.0-rc1)
+
+- Non-breaking improvements
+  - Default to cleaning up dead silo entries in the cluster membership table after 7 days. (#6032)
+  - Reduce log noise in SiloConnection (#6037)
+  - Add separate SiloMessagingOptions.SystemResponseTimeout option for SystemTarget calls (#6046)
+  - Added structured logging (#6045)
+  - Transactions: support larger state sizes in Azure Table Storage (#6047)
+  - Add warning message at startup (#6041)
+  - Add TLS middleware with sample (#6035)
+  - Prevent Orleans + Kestrel from interfering with each other's networking services (#6042)
+  - Remove SQL scripts from AdoNet NuGet packages. (#6049)
+
+- Non-breaking bug fixes
+  - Add an explicit reference to Microsoft.Bcl.AsyncInterfaces pack… (#6031)
+  - Fix potential rare NullReferenceException in GrainTimer (#6043)
+
+### [1.5.10] (changes since 1.5.9)
+
+- Non-breaking bug fixes
+  - Remove activation from message target list if constructor threw an exception (#5960)
+
+### [2.4.3] (changes since 2.4.2)
+
+- Non-breaking improvements
+  - Add "UseSiloUnobservedExceptionsHandler" extensions to the ISiloBuilder (#59120)
+
+- Non-breaking bug fixes
+  - Remove activation from message target list if constructor threw an exception (#5958)
+  - Fix Connect blocked when ConnectAsync completed synchronously (#5963)
+  - Stateless worker local compatibility check (#5917)
+  - Fixed wrong condition for getting logContext (#5999)
+  - Fix UTF8 encoding settings that appear to break execution of tests. (#6001)
+  - Use MemFree when MemAvailable is not present (#6005)
+  - Specify DateTimeKind.Utc when constructing DateTime instances (#6020)
+
+### [3.0.0-rc1] (changes since 3.0.0-beta1)
+
+- Non-breaking improvements
+  - Remove unused "SetupSqlScriptFileNames" , It will cause the test to fail (#5872)
+  - Improve codegen's .NET Core 3 compatibility 2 (#5883)
+  - Improve graceful deactivation of grains performing transaction work (#5887)
+  - Add "UseSiloUnobservedExceptionsHandler" extensions to the ISiloBuilder (#59120)
+  - Add hard limits for message header and body size (#5911)
+  - Memory usage for activation data improved. (#5907)
+  - Stream configuration namespace cleanup. (#5923)
+  - Lease based queue balancer refactor. (#5914)
+  - Add detail to SiloHealthMonitor logs for superseded result (#5892)
+  - ClusterHealthMonitor: ignore superseded probes (#5930)
+  - Deny connections to known-dead silos (#5889)
+  - Set Socket.NoDelay = true by default (#5934)
+  - Adds a large sample that runs and tests locally in reliable configuration (#5909, #5953, #5951, #5955, #5984)
+  - Migrate to ASP.NET "Bedrock" abstractions (#5935)
+  - Remove AWS, Service Fabric, & ADO.NET metapackages (#5946)
+  - Improves queries by adding lock hinting to membership protocol (#5954)
+  - Bound connection attempt concurrency in ConnectionManager (#5894)
+  - Cleanup Response class & improve ToString (#5975)
+  - Fix connection log scoping (#5976)
+  - Make CollectionAgeLimitAttribute easy to use! (#5961)
+  - Remove unused IMembershipOracle interface (#5987)
+  - Move FileLoggerProvider from Core to TestingHost (#5992)
+  - Add additional internal health checks for membership (#5988)
+  - Add serializer for RegexStreamNamespacePredicate (#5989)
+  - Remove most instances of MarshalByRefObject (#5994)
+  - Make TestClusterBuilder.AddSiloBuilderConfigurator and TestClusterBuilder.AddClientBuilderConfigurator fluent style APIs. (#5995)
+  - Add IBinaryTokenStreamReader.Length property (#5997)
+  - Remove InternalsVisibleTo set for extensions by making necessary internal types public (#6000)
+  - Propagate message [de]serialization exceptions to callers (#5998)
+  - Improve MethodInfo resolution for grain call filters (#6004)
+  - Improve List<T>/ReadOnlyCollection<T> deep copy performance (#6010)
+  - Cancel pending silo monitoring probe after ProbeTimeout elapses (#6006)
+  - Simplify ConnectionListener.RunAsync (#6014)
+  - Support adding [DebuggerStepThrough] to generated classes via project option (#6017)
+  - Move from WindowsAzure.Storage library to Microsoft.AzureCosmos.Table and Microsoft.Azure.Storage.* packages. (#6013)
+  - Update dependecies to their latest versions (#6025, #5983, #5943, #5973, #5945, #5944)
+
+- Non-breaking bug fixes
+  - Protect ClientState.PendingToSend with lock (#5881)
+  - Fix NullReferenceException in AQStreamsBatchingTests.Dispose (#5888)
+  - Stateless worker local compatibility check (#5917)
+  - Remove activation from message target list if constructor threw an exception (#5958)
+  - Clear RequestContext when spawning connections (#5974)
+  - Fix potential deadlock with Connection.closeRegistration (#5986)
+  - Fixed wrong condition for getting logContext (#5999)
+  - Use MemFree when MemAvailable is not present (#6005)
+  - Avoid generating duplicate method id switch labels (#6007)
+  - CodeGen: disambiguate parameters with duplicate names (#6016)
+  - Specify DateTimeKind.Utc when constructing DateTime instances (#6020)
+  - Use half-duplex connections when accepting a connection from a pre-v3 silo (#6023)
+
 ### [1.5.9] (changes since 1.5.8)
 
 - Non-breaking bug fixes

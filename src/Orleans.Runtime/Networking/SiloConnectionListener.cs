@@ -11,8 +11,10 @@ namespace Orleans.Runtime.Messaging
 {
     internal sealed class SiloConnectionListener : ConnectionListener, ILifecycleParticipant<ISiloLifecycle>
     {
+        internal static readonly object ServicesKey = new object();
         private readonly INetworkingTrace trace;
         private readonly ILocalSiloDetails localSiloDetails;
+        private readonly SiloConnectionOptions siloConnectionOptions;
         private readonly MessageCenter messageCenter;
         private readonly MessageFactory messageFactory;
         private readonly EndpointOptions endpointOptions;
@@ -21,15 +23,16 @@ namespace Orleans.Runtime.Messaging
         public SiloConnectionListener(
             IServiceProvider serviceProvider,
             IOptions<ConnectionOptions> connectionOptions,
-            IConnectionListenerFactory listenerFactory,
+            IOptions<SiloConnectionOptions> siloConnectionOptions,
             MessageCenter messageCenter,
             MessageFactory messageFactory,
             INetworkingTrace trace,
             IOptions<EndpointOptions> endpointOptions,
             ILocalSiloDetails localSiloDetails,
             ConnectionManager connectionManager)
-            : base(serviceProvider, listenerFactory, connectionOptions, connectionManager, trace)
+            : base(serviceProvider, serviceProvider.GetRequiredServiceByKey<object, IConnectionListenerFactory>(ServicesKey), connectionOptions, connectionManager, trace)
         {
+            this.siloConnectionOptions = siloConnectionOptions.Value;
             this.messageCenter = messageCenter;
             this.messageFactory = messageFactory;
             this.trace = trace;
@@ -53,6 +56,13 @@ namespace Orleans.Runtime.Messaging
                 this.localSiloDetails,
                 this.connectionManager,
                 this.ConnectionOptions);
+        }
+
+        protected override void ConfigureConnectionBuilder(IConnectionBuilder connectionBuilder)
+        {
+            var configureDelegate = (SiloConnectionOptions.ISiloConnectionBuilderOptions)this.siloConnectionOptions;
+            configureDelegate.ConfigureSiloInboundBuilder(connectionBuilder);
+            base.ConfigureConnectionBuilder(connectionBuilder);
         }
 
         void ILifecycleParticipant<ISiloLifecycle>.Participate(ISiloLifecycle lifecycle)

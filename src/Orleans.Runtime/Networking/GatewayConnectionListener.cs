@@ -11,11 +11,13 @@ namespace Orleans.Runtime.Messaging
 {
     internal sealed class GatewayConnectionListener : ConnectionListener, ILifecycleParticipant<ISiloLifecycle>
     {
+        internal static readonly object ServicesKey = new object();
         private readonly INetworkingTrace trace;
         private readonly ILocalSiloDetails localSiloDetails;
         private readonly IOptions<MultiClusterOptions> multiClusterOptions;
         private readonly MessageCenter messageCenter;
         private readonly EndpointOptions endpointOptions;
+        private readonly SiloConnectionOptions siloConnectionOptions;
         private readonly MessageFactory messageFactory;
         private readonly OverloadDetector overloadDetector;
         private readonly Gateway gateway;
@@ -23,7 +25,7 @@ namespace Orleans.Runtime.Messaging
         public GatewayConnectionListener(
             IServiceProvider serviceProvider,
             IOptions<ConnectionOptions> connectionOptions,
-            IConnectionListenerFactory listenerFactory,
+            IOptions<SiloConnectionOptions> siloConnectionOptions,
             MessageFactory messageFactory,
             OverloadDetector overloadDetector,
             Gateway gateway,
@@ -33,8 +35,9 @@ namespace Orleans.Runtime.Messaging
             IOptions<EndpointOptions> endpointOptions,
             MessageCenter messageCenter,
             ConnectionManager connectionManager)
-            : base(serviceProvider, listenerFactory, connectionOptions, connectionManager, trace)
+            : base(serviceProvider, serviceProvider.GetRequiredServiceByKey<object, IConnectionListenerFactory>(ServicesKey), connectionOptions, connectionManager, trace)
         {
+            this.siloConnectionOptions = siloConnectionOptions.Value;
             this.messageFactory = messageFactory;
             this.overloadDetector = overloadDetector;
             this.gateway = gateway;
@@ -62,6 +65,13 @@ namespace Orleans.Runtime.Messaging
                 this.ConnectionOptions,
                 this.messageCenter,
                 this.localSiloDetails);
+        }
+
+        protected override void ConfigureConnectionBuilder(IConnectionBuilder connectionBuilder)
+        {
+            var configureDelegate = (SiloConnectionOptions.ISiloConnectionBuilderOptions)this.siloConnectionOptions;
+            configureDelegate.ConfigureGatewayInboundBuilder(connectionBuilder);
+            base.ConfigureConnectionBuilder(connectionBuilder);
         }
 
         void ILifecycleParticipant<ISiloLifecycle>.Participate(ISiloLifecycle lifecycle)
