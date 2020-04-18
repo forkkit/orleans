@@ -416,11 +416,13 @@ namespace UnitTests.MembershipTests
             MembershipEntry oldEntry = CreateMembershipEntryForTest();
             oldEntry.IAmAliveTime = oldEntry.IAmAliveTime.AddDays(-10);
             oldEntry.StartTime = oldEntry.StartTime.AddDays(-10);
+            oldEntry.Status = SiloStatus.Dead;
             bool ok = await membershipTable.InsertRow(oldEntry, newTableVersion);
+            var table = await membershipTable.ReadAll();
 
             Assert.True(ok, "InsertRow failed");
 
-            newTableVersion = newTableVersion.Next();
+            newTableVersion = table.Version.Next();
             MembershipEntry newEntry = CreateMembershipEntryForTest();
             ok = await membershipTable.InsertRow(newEntry, newTableVersion);
 

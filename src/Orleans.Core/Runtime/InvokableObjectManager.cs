@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
@@ -13,36 +14,41 @@ namespace Orleans
     internal class InvokableObjectManager : IDisposable
     {
         private readonly CancellationTokenSource disposed = new CancellationTokenSource();
-        private readonly ConcurrentDictionary<GuidId, LocalObjectData> localObjects = new ConcurrentDictionary<GuidId, LocalObjectData>();
+        private readonly ConcurrentDictionary<ObserverGrainId, LocalObjectData> localObjects = new ConcurrentDictionary<ObserverGrainId, LocalObjectData>();
         private readonly IRuntimeClient runtimeClient;
         private readonly ILogger logger;
         private readonly SerializationManager serializationManager;
+        private readonly MessagingTrace messagingTrace;
         private readonly Func<object, Task> dispatchFunc;
 
-        public InvokableObjectManager(IRuntimeClient runtimeClient, SerializationManager serializationManager, ILogger<InvokableObjectManager> logger)
+        public InvokableObjectManager(
+            IRuntimeClient runtimeClient,
+            SerializationManager serializationManager,
+            MessagingTrace messagingTrace,
+            ILogger<InvokableObjectManager> logger)
         {
             this.runtimeClient = runtimeClient;
             this.serializationManager = serializationManager;
+            this.messagingTrace = messagingTrace;
             this.logger = logger;
 
             this.dispatchFunc = o =>
                 this.LocalObjectMessagePumpAsync((LocalObjectData) o);
         }
 
-        public bool TryRegister(IAddressable obj, GuidId objectId, IGrainMethodInvoker invoker)
+        public bool TryRegister(IAddressable obj, ObserverGrainId objectId, IGrainMethodInvoker invoker)
         {
             return this.localObjects.TryAdd(objectId, new LocalObjectData(obj, objectId, invoker));
         }
 
-        public bool TryDeregister(GuidId objectId)
+        public bool TryDeregister(ObserverGrainId objectId)
         {
-            return this.localObjects.TryRemove(objectId, out LocalObjectData ignored);
+            return this.localObjects.TryRemove(objectId, out _);
         }
 
         public void Dispatch(Message message)
         {
-            GuidId observerId = message.TargetObserverId;
-            if (observerId == null)
+            if (!ObserverGrainId.TryParse(message.TargetGrain, out var observerId))
             {
                 this.logger.Error(
                     ErrorCode.ProxyClient_OGC_TargetNotFound_2,
@@ -141,8 +147,11 @@ namespace Orleans
                         message = objectData.Messages.Dequeue();
                     }
 
-                    if (ExpireMessageIfExpired(this.logger, message, MessagingStatisticsGroup.Phase.Invoke))
+                    if (message.IsExpired)
+                    {
+                        this.messagingTrace.OnDropExpiredMessage(message, MessagingStatisticsGroup.Phase.Invoke);
                         continue;
+                    }
 
                     RequestContextExtensions.Import(message.RequestContextData);
                     InvokeMethodRequest request = null;
@@ -201,22 +210,12 @@ namespace Orleans
             }
         }
 
-        private static bool ExpireMessageIfExpired(ILogger logger, Message message, MessagingStatisticsGroup.Phase phase)
-        {
-            if (message.IsExpired)
-            {
-                message.DropExpiredMessage(logger, phase);
-                return true;
-            }
-
-            return false;
-        }
-
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
         private void SendResponseAsync(Message message, object resultObject)
         {
-            if (ExpireMessageIfExpired(this.logger, message, MessagingStatisticsGroup.Phase.Respond))
+            if (message.IsExpired)
             {
+                this.messagingTrace.OnDropExpiredMessage(message, MessagingStatisticsGroup.Phase.Respond);
                 return;
             }
 
@@ -261,7 +260,7 @@ namespace Orleans
 
                 case Message.Directions.Request:
                 {
-                    Exception deepCopy = null;
+                    Exception deepCopy;
                     try
                     {
                         // we're expected to notify the caller if the deep copy failed.
@@ -290,11 +289,11 @@ namespace Orleans
         {
             internal WeakReference LocalObject { get; }
             internal IGrainMethodInvoker Invoker { get; }
-            internal GuidId ObserverId { get; }
+            internal ObserverGrainId ObserverId { get; }
             internal Queue<Message> Messages { get; }
             internal bool Running { get; set; }
 
-            internal LocalObjectData(IAddressable obj, GuidId observerId, IGrainMethodInvoker invoker)
+            internal LocalObjectData(IAddressable obj, ObserverGrainId observerId, IGrainMethodInvoker invoker)
             {
                 this.LocalObject = new WeakReference(obj);
                 this.ObserverId = observerId;

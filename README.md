@@ -90,7 +90,7 @@ The grain class above does not persist its state. More thorough example demonstr
 
 ## Orleans Runtime
 
-The Orleans runtime is what implements the programming model for applications.The main component of the runtime is the *silo*, which is responsible for hosting grains. Typically, a group of silos run as a cluster for scalability and fault-tolerance. When run as a cluster, silos coordinate with each other to distribute work, detect and recover from failures. The runtime enables grains hosted in the cluster to communicate with each other as if they are within a single process.
+The Orleans runtime is what implements the programming model for applications. The main component of the runtime is the *silo*, which is responsible for hosting grains. Typically, a group of silos run as a cluster for scalability and fault-tolerance. When run as a cluster, silos coordinate with each other to distribute work, detect and recover from failures. The runtime enables grains hosted in the cluster to communicate with each other as if they are within a single process.
 
 In addition to the core programming model, the silo provides grains with a set of runtime services, such as timers, reminders (persistent timers), persistence, transactions, streams, and more. See the [features section](#features) below for more detail.
 
@@ -112,7 +112,7 @@ In addition to the simple persistence model described above, grains can have *tr
 
 Streams help developers to process series of data items in near-real time. Streams in Orleans are *managed*: streams do not need to be created or registered before a grain or client publishes to a stream or subscribes to a stream. This allows for greater decoupling of stream producers and consumers from each other and from the infrastructure. Stream processing is reliable: grains can store checkpoints (cursors) and reset to a stored checkpoint during activation or at any point afterwards.
 Streams supports batch delivery of messages to consumers to improve efficiency and recovery performance.
-Streams are backed by queueing services such as Azure Event Hubs, Amazon Kinesis, and others. An arbitrary number of streams can be multiplexed onto a smaller number of queues and the responsibility for processing these queues is balanced evently across the cluster. 
+Streams are backed by queueing services such as Azure Event Hubs, Amazon Kinesis, and others. An arbitrary number of streams can be multiplexed onto a smaller number of queues and the responsibility for processing these queues is balanced evenly across the cluster. 
 
 ### Timers &amp; Reminders
 
@@ -144,7 +144,7 @@ Logic which is common to many grains can be expressed as [Grain Call Filters](ht
 
 ### Request Context
 
-Metadata and other information can be passed along a series of requests using [request context](https://dotnet.github.io/orleans/Documentation/grains/request_context.html). Request context can be used for holing distributed tracing information or any other user-defined values.
+Metadata and other information can be passed along a series of requests using [request context](https://dotnet.github.io/orleans/Documentation/grains/request_context.html). Request context can be used for holding distributed tracing information or any other user-defined values.
 
 ## Documentation
 
@@ -159,7 +159,7 @@ Please see the [getting started tutorial](https://dotnet.github.io/orleans/Docum
 On Windows, run the `build.cmd` script to build the NuGet packages locally, then reference the required NuGet packages from `/Artifacts/Release/*`.
 You can run `Test.cmd` to run all BVT tests, and `TestAll.cmd` to also run Functional tests.
 
-On Linux and macOS, run the `build.sh` script or `dotnet build ./OrleansCrossPlatform.sln` to build Orleans.
+On Linux and macOS, run the `build.sh` script or `dotnet build` to build Orleans.
 
 ## Official Builds
 
@@ -219,5 +219,3 @@ This project is licensed under the [MIT license](https://github.com/dotnet/orlea
 * Technical Report: [Distributed Virtual Actors for Programmability and Scalability](http://research.microsoft.com/apps/pubs/default.aspx?id=210931)
 * [Orleans Documentation](http://dotnet.github.io/orleans/)
 * [Contributing](http://dotnet.github.io/orleans/Community/Contributing.html)
-
-This project has adopted the [Microsoft Open Source Code of Conduct](https://opensource.microsoft.com/codeofconduct/). For more information see the [Code of Conduct FAQ](https://opensource.microsoft.com/codeofconduct/faq/) or contact [opencode@microsoft.com](mailto:opencode@microsoft.com) with any additional questions or comments.
